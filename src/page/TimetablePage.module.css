@@ -1,0 +1,21 @@
+.header{
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.bar{
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(
+        to bottom,
+        #7593D5 50%, 
+        #B2B2B2 50%
+    );
+}
+
+.timetable{
+    display: flex;
+    align-items: flex-start;
+}
