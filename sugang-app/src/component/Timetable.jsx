@@ -7,21 +7,27 @@ export default function Timetable({data}){
     const times = Array.from({length:24}, (_,i) => i+1)    
 
     const getSubject = (day, period) => {
-        const sub = data.find(lecture => {
-            if(!lecture.times) return false
+        const sub = data.filter(lecture => {
+            if(!lecture.times || !lecture.status) return false
 
             const timePart = lecture.times.split('(')[0]
             const daysArray = timePart.split('/')
+            const targetDayStr = daysArray.find(d => d.trim().startsWith(day))
 
-            const targetDayStr = daysArray.find(d => d.startsWith(day))
             if(!targetDayStr) return false
 
-            const periods = targetDayStr.replace(day,"").split(',')
-            return periods.includes(String(period))
+            const periods = targetDayStr.replace(day, "").split(',')
+            return periods.some(p=>p.trim() === String(period))
         })
 
-        if(!sub || !sub.status) return ""
-        return sub.status === "waiting" ? styles.waitingCell : styles.sugangCell
+        if(sub.length === 0) return ""
+
+        const hasSugang = sub.some(l=>l.status === "sugang")
+        const hasWaiting = sub.some(l=>l.status === "waiting")
+        
+        if(hasSugang) return styles.sugangCell
+        if(hasWaiting) return styles.waitingCell
+        return ""
     }
 
     return(

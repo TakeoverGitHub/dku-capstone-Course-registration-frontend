@@ -14,14 +14,14 @@ export default function WaitingList({data, onDelete}){
                 <thead>
                     <tr>
                         <th style={{width:"7%"}}>삭제</th>
-                        <th style={{width:"7%"}}>캠퍼스</th>
-                        <th style={{width:"10%"}}>교과목번호</th>
-                        <th style={{width:"4%"}}>분반</th>
+                        <th style={{width:"8%"}}>캠퍼스</th>
+                        <th style={{width:"12%"}}>교과목번호</th>
+                        <th style={{width:"3%"}}>분반</th>
                         <th style={{width:"32%"}}>교과목명</th>
-                        <th style={{width:"4%"}}>학점</th>
-                        <th style={{width:"7%"}}>교강사명</th>
+                        <th style={{width:"3%"}}>학점</th>
+                        <th style={{width:"10%"}}>교강사명</th>
                         <th style={{width:"8%"}}>재수강년도학기</th>
-                        <th style={{width:"14%"}}>수업유형</th>
+                        <th style={{width:"10%"}}>수업유형</th>
                         <th style={{width:"7%"}}>대기번호</th>
                     </tr>
                 </thead>

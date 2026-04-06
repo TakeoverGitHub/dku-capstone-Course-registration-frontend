@@ -105,3 +105,20 @@
     text-align: left;
     line-height: 1.6;
 }
+
+.notice h3{
+    color: #5378CB;
+    gap: 4px;
+}
+
+.red{
+    color: red;
+}
+
+.gray{
+    color: #686868;
+}
+
+.blue{
+    color: blue;
+}

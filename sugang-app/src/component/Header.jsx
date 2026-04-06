@@ -1,5 +1,5 @@
 import styles from "./Header.module.css"
-import logo from '../../public/top_logo.png'
+import logo from '../../../public/top_logo.png'
 import { useNavigate } from "react-router-dom"
 
 export default function Header({user,onLogout}){

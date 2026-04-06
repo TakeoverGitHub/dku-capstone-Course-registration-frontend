@@ -1,7 +1,7 @@
 import styles from "./Sidebar.module.css"
 import {NavLink} from 'react-router-dom'
 
-export default function Sidebar(){
+export default function Sidebar({goBasket}){
     
     return(
         <div className={styles.menu}>
@@ -46,19 +46,14 @@ export default function Sidebar(){
                 isActive ? `${styles.option} ${styles.active}` : styles.option}>
                 ▶ 수강신청확인서
             </NavLink>
-            <NavLink to='/lecture' className={({isActive})=>
-                isActive ? `${styles.option} ${styles.active}` : styles.option}>
-                ▶ 종합강의시간표
-            </NavLink>
 
             <div className={styles.block}>
                 수강계획도우미
             </div>
 
-            <NavLink to='/helper' className={({isActive})=>
-                isActive ? `${styles.option} ${styles.active}` : styles.option}>
+            <a href="#" onClick={goBasket} className={styles.option}>
                 ▶ 수강계획도우미 등록 (학부)
-            </NavLink>
+            </a>
 
             <div className={styles.box}></div>
         </div>

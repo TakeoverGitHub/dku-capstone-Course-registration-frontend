@@ -8,12 +8,13 @@ import Sugang from "./component/Sugang"
 import SugangStatus from "./component/SugangStatus"
 import WaitingList from "./component/WaitingList"
 import Summary from "./component/Summary"
-import data from "./db/sugangData.json"
-import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
+import data from "../../db/sugangData.json"
+import { BrowserRouter, Route, Routes, Navigate, useNavigate } from 'react-router-dom'
 import TimetablePage from './page/TimetablePage'
 import LoginPage from './page/LoginPage'
 import ProtectRoutes from './component/ProtectRoutes'
 import { useState } from 'react'
+import { useEffect } from 'react'
 
 export default function App() {
 
@@ -30,9 +31,43 @@ export default function App() {
     localStorage.setItem('user', JSON.stringify(userInfo))
   }
 
+  useEffect(() => {
+    const checkAuth = () => {
+      const checkStorage = localStorage.getItem('user')
+      if(user && !checkStorage){
+        setUser(null)
+      }
+    }
+
+    const timer = setInterval(checkAuth, 2000)
+    return () => clearInterval(timer)
+  }, [user])
+
   const handleLogout = () => {
+    localStorage.removeItem('user')
+    setUser(null)
+    const returnUrl = window.location.origin + '/login?action=done'
+    window.location.href = `http://localhost:3001?action=clear&next=${encodeURIComponent(returnUrl)}`
+  }
+  
+  const clearUserState = () => {
     setUser(null)
     localStorage.removeItem('user')
+  }
+
+  const parseTimes = (timesStr) => {
+    if(!timesStr) return false
+  
+    const timePart = timesStr.split('(')[0]
+    const daysArray = timePart.split('/')
+  
+    const allSlots = []
+    daysArray.forEach(dayStr => {
+      const day = dayStr[0]
+      const periods = dayStr.slice(1).split(',')
+      periods.forEach(p=>allSlots.push(day+p))
+    })
+    return allSlots
   }
 
   const handleSugang = (code,division) => {
@@ -52,19 +87,55 @@ export default function App() {
       return
     }
 
+    const occupiedSlots = lectures.filter(l=>l.status === "sugang").flatMap(l=>parseTimes(l.times))
+    const targetSlots = parseTimes(target.times)
+    const isConflict = targetSlots.some(slot=>occupiedSlots.includes(slot))
+
+    if (isConflict) {
+      alert("이미 신청된 과목과 시간대가 겹쳐 신청이 불가능합니다.")
+      return
+    }
+    
     const isFull = target.current >= target.limit
+
+    if(isFull) {
+      const waitingCount = lectures.filter(l=>l.status === "waiting").length
+      if(waitingCount >= 2){
+        alert("최대 2과목까지만 대기 가능합니다.")
+        return
+      }
+      else alert("정원이 초과되어 대기열로 신청됩니다.")
+    }
+
     const newStatus = isFull ? "waiting" : "sugang"
 
-
-    if(isFull) alert(`정원이 초과되어 대기 ${target.totalwaiting + 1}번으로 신청됩니다.`)
-
+    if(lectures.some(l=>l.code === code && l.status === "waiting")){
+      if(isFull){
+        alert("이미 해당 과목의 다른 분반이 대기열에 존재합니다.")
+        return
+      }
+      else alert("대기 중인 과목을 취소하고 신청합니다.")
+    }
+    
     setLectures(prev =>
-      prev.map(lectures => lectures.code === code && lectures.division === division? 
-        {...lectures, status:newStatus, 
-          current: newStatus === "sugang" ? lectures.current + 1 : lectures.current,
-          totalwaiting: newStatus === "waiting" ? lectures.totalwaiting + 1 : lectures.totalwaiting,
-          mywaiting: newStatus === "waiting" ? lectures.totalwaiting + 1 : null} 
-          : lectures)
+      prev.map(lectures => {
+        if(lectures.code === code && lectures.division === division){
+          return{
+            ...lectures, status:newStatus, 
+            current: newStatus === "sugang" ? lectures.current + 1 : lectures.current,
+            totalwaiting: newStatus === "waiting" ? lectures.totalwaiting + 1 : lectures.totalwaiting,
+            mywaiting: newStatus === "waiting" ? lectures.totalwaiting + 1 : null
+          }
+        }
+        
+        if(newStatus === "sugang" && lectures.code === code && lectures.status === "waiting"){
+          return{
+            ...lectures, status: "", mywaiting: ""
+          }
+        }
+
+        return lectures
+      })
     )
   }
 
@@ -77,18 +148,30 @@ export default function App() {
     )
   }
 
+  const handleLink = (e) => {
+      e.preventDefault()
+      if(!user){
+          alert("로그인이 필요합니다.")
+          return
+      }
+      const userData = encodeURIComponent(JSON.stringify(user))
+      window.open(`http://localhost:3001?user=${userData}`, "_blank")
+  }
+
   return (
     <BrowserRouter>
       <div className='app'>
         {user && <Header user={user} onLogout={handleLogout}/>}
-        {user && <Sidebar />}
+        {user && <Sidebar goBasket={handleLink}/>}
 
         <Routes>
           <Route path='/' element={user ? <Navigate to='/sugang'/> : <Navigate to='/login'/>}
           />
 
           <Route path='/login' element={
-            user ? <Navigate to='/sugang'/> : <LoginPage onLogin={handleLogin}/>
+            (user && !window.location.search.includes('action=done')) ? 
+            <Navigate to='/sugang'/> : 
+            <LoginPage onLogin={handleLogin} onLogout={clearUserState}/>
           }/>
 
           <Route element={<ProtectRoutes user={user}/>}>
