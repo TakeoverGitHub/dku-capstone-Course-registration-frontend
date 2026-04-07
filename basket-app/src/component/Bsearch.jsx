@@ -1,8 +1,10 @@
 import { useState } from "react"
 import styles from "./Bsearch.module.css"
 
+// 강의 검색 기능 (옵션 선택후 검색, 추가 버튼으로 강의 담기)
 export default function Bsearch({data,onAdd}){
 
+    // 데이터 읽고 초기값 세팅
     const [lectures] = useState(data)
     const [filtered, setFiltered] = useState([])
     const [searchType, setSearchType] = useState("전공")
@@ -14,13 +16,14 @@ export default function Bsearch({data,onAdd}){
         day: '',
         grade: ''
     })
-    const result = 0
 
+    // 선택한 옵션 필터에 반영
     const handleChange = (e) => {
         const {name,value} = e.target
         setSearchParams(prev => ({...prev, [name]:value}))
     }
 
+    // 선택한 옵션 기반으로 검색 로직
     const onSearch = () => {
         const filterResult = lectures.filter(sub => {
             const matchType = !searchType || sub.type2 === searchType
@@ -42,6 +45,7 @@ export default function Bsearch({data,onAdd}){
         setFiltered(filterResult)
     }
 
+    // 교양, 전공, 학문기초 선택 시 옵션 다르게
     const handleType = (type) => {
         setSearchType(type)
         setSearchParams({
@@ -63,6 +67,7 @@ export default function Bsearch({data,onAdd}){
             </div>
 
             <div className={styles.container}>
+                {/*교양,전공,학문기초 선택*/}
                 <div className={styles.radio}>
                     <span className={styles.label}>검색 구분</span>
                     <label>
@@ -79,6 +84,7 @@ export default function Bsearch({data,onAdd}){
                     </label>
                 </div>
 
+                {/*사용자가 선택하는 옵션값 반영*/}
                 <div className={styles.filter}>
                     <select className={styles.selectSmall} name="campus" onChange={handleChange} value={searchParams.campus}>
                         <option value="">캠퍼스</option>
@@ -129,6 +135,7 @@ export default function Bsearch({data,onAdd}){
                         </select>
                     )}
 
+                    {/*검색 버튼*/}
                     <button className={styles.searchBtn} onClick={onSearch}>SEARCH</button>
                 </div>
             </div>
@@ -136,6 +143,8 @@ export default function Bsearch({data,onAdd}){
             <p className={styles.result}>
                 검색결과는 [ <span style={{color:"red"}}>{filtered.length}건</span> ] 입니다.
             </p>
+            
+            {/*검색 결과 출력*/}
             <table className={styles.table}>
                 <thead>
                     <tr>
@@ -155,6 +164,7 @@ export default function Bsearch({data,onAdd}){
                     </tr>
                 </thead>
                 <tbody>
+                    {/*필터링된 데이터만 화면에 띄워주는 역할*/}
                     {filtered.length > 0 ? (
                         filtered.map(sub => (
                             <tr key={sub.id}>

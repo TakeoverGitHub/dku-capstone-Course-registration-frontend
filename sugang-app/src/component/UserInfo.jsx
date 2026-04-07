@@ -1,5 +1,6 @@
 import styles from "./UserInfo.module.css"
 
+// 사용자 정보 테이블 (로그인한 사용자 정보 및 학점 정보)
 export default function UserInfo({userInfo, credits}){
     
     return(
@@ -7,6 +8,7 @@ export default function UserInfo({userInfo, credits}){
             <div className={styles.table}>
                 <table className={styles.user}>
                     <tbody>
+                        {/*현재학기, 학번, 소속, 성명, 제1전공*/}
                         <tr>
                             <td rowSpan={2} className={styles.semesterCell}>
                                 {userInfo.semester}
@@ -27,6 +29,7 @@ export default function UserInfo({userInfo, credits}){
 
                 <table className={styles.credit}>
                     <tbody>
+                        {/*각 학점 내역 확인 및 신청 가능 학점 표기*/}
                         <tr>
                             <td className={styles.listCell}>이수학기</td>
                             <td className={styles.creditCell}>{credits.semester}</td>

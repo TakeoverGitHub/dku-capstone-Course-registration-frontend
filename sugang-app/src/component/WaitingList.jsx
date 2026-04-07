@@ -1,6 +1,7 @@
 import styles from "./WaitingList.module.css"
 import React from "react"
 
+// 대기열신청내역 테이블 (삭제 가능, 대기 번호 확인 가능)
 export default function WaitingList({data, onDelete}){
 
     return(
@@ -26,9 +27,11 @@ export default function WaitingList({data, onDelete}){
                     </tr>
                 </thead>
                 <tbody>
+                    {/*대기 중인 강의 목록 출력*/}
                     {data.map((sub)=>(
                         <React.Fragment key={`${sub.code}-${sub.division}`}>
                         <tr>
+                            {/*삭제 버튼으로 대기열 취소 가능*/}
                             <td rowSpan={2}><button className={styles.button} onClick={()=>onDelete(sub.code, sub.division)}>삭제</button></td>
                             <td>{sub.campus}</td>
                             <td>{sub.code}</td>
@@ -38,6 +41,7 @@ export default function WaitingList({data, onDelete}){
                             <td>{sub.professor}</td>
                             <td>{sub.retake}</td>
                             <td>{sub.type}</td>
+                            {/*대기번호 5이하면 "5이하"로 표기*/}
                             <td className={sub.mywaiting <= 5 ? styles.red : ""}>
                                 {sub.mywaiting <= 5 ? "5이하" : sub.mywaiting}
                             </td>

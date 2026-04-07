@@ -1,6 +1,7 @@
 import styles from "./SugangStatus.module.css"
 import React from "react"
 
+// 수강신청내역 테이블 (삭제 가능)
 export default function SugangStatus({data, onDelete}){
 
     return(
@@ -25,6 +26,7 @@ export default function SugangStatus({data, onDelete}){
                     </tr>
                 </thead>
                 <tbody>
+                    {/*신청완료된 강의 목록 출력 및 삭제 버튼*/}
                     {data.map((sub)=>(
                         <React.Fragment key={`${sub.code}-${sub.division}`}>
                         <tr>

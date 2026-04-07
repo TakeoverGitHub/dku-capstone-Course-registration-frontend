@@ -1,5 +1,6 @@
 import styles from "./Sugang.module.css"
 
+// 장바구니로 담은 강의 목록 보여주는 테이블 (더블클릭으로 신청)
 export default function Sugang({data, onRegister}){
 
     return(
@@ -25,6 +26,7 @@ export default function Sugang({data, onRegister}){
                     </tr>
                 </thead>
                 <tbody>
+                    {/*담은 강의 목록 출력 및 더블클릭으로 신청 로직 실행*/}
                     {data.map((sub)=>(
                         <tr key={`${sub.code}-${sub.division}`} onDoubleClick={()=>onRegister(sub.code, sub.division)}>
                             <td>{sub.code}</td>

@@ -1,7 +1,9 @@
 import styles from "./Btable.module.css"
 
+// 담은 강의 목록 (삭제 및 순서 변경 가능)
 export default function Btable({data,onRemove,onSwap,onMove}){
 
+    // 우선순위 기준 정렬
     const basketList = (data || []).sort((a,b) => (a.seq || 0) - (b.seq || 0))
 
     return(
@@ -29,8 +31,10 @@ export default function Btable({data,onRemove,onSwap,onMove}){
                     </tr>
                 </thead>
                 <tbody>
+                    {/*담은 강의 목록 출력*/}
                     {basketList.length > 0 ? basketList.map((sub,index) => (
                         <tr key={sub.id}>
+                            {/*삭제 버튼으로 취소 가능*/}
                             <td><button className={styles.button} onClick={()=>onRemove(sub.id)}>
                                 삭제</button></td>
                             <td>{sub.campus}</td>
@@ -45,6 +49,7 @@ export default function Btable({data,onRemove,onSwap,onMove}){
                             <td>{sub.remain}</td>
                             <td>{sub.cancel}</td>
                             <td>
+                                {/*우선순위 변경 버튼*/}
                                 <span className={styles.orderBtn} onClick={()=>onSwap(sub.id, basketList[index-1]?.id)}>
                                     {'\u25B2'}</span>
                                 <span className={styles.orderBtn} onClick={()=>onSwap(sub.id, basketList[index+1]?.id)}>

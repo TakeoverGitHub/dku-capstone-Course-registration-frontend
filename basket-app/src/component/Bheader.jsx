@@ -1,6 +1,7 @@
 import styles from "./Bheader.module.css"
 import logo from '../../../public/top_logo.png'
 
+// 헤더 부분 (로고, 유저정보, 로그아웃버튼)
 export default function Bheader({user,onLogout}){
 
     return(

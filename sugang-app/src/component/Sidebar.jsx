@@ -1,6 +1,7 @@
 import styles from "./Sidebar.module.css"
 import {NavLink} from 'react-router-dom'
 
+// 좌측 사이드바 부분 (각 메뉴(링크)들 위치)
 export default function Sidebar({goBasket}){
     
     return(
@@ -17,10 +18,12 @@ export default function Sidebar({goBasket}){
                 수강안내
             </div>
 
+            {/*수강안내문 클릭 시 해당 페이지 띄우기*/}
             <NavLink to='/notice' className={({isActive})=>
                 isActive ? `${styles.option} ${styles.active}` : styles.option}>
                 ▶ 수강안내문
             </NavLink>
+            {/*Q&A, FAQ는 VOC 링크 연결*/}
             <NavLink to='https://voc.dankook.ac.kr/tiad/vocm/findVocList.do?_view=ok' 
                 target="_blank" className={styles.option}>
                 ▶ Q&A
@@ -34,6 +37,7 @@ export default function Sidebar({goBasket}){
                 수강신청
             </div>
 
+            {/*각 메뉴 클릭 시 페이지 이동*/}
             <NavLink to='/sugang' className={({isActive})=>
                 isActive ? `${styles.option} ${styles.active}` : styles.option}>
                 ▶ 수강신청
@@ -51,6 +55,7 @@ export default function Sidebar({goBasket}){
                 수강계획도우미
             </div>
 
+            {/*장바구니 페이지로 연결*/}
             <a href="#" onClick={goBasket} className={styles.option}>
                 ▶ 수강계획도우미 등록 (학부)
             </a>

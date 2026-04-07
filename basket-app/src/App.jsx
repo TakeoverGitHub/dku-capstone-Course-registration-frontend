@@ -7,12 +7,15 @@ import { useEffect, useState } from 'react'
 import Bsummary from './component/Bsummary'
 import Bsearch from './component/Bsearch'
 
+// 컴포넌트들 호출 및 로직 담당
 export default function App() {
 
+  // 로그인 페이지에서 넘겨받은 파라미터로 유저 저장 (없으면 로컬스토리지에서 가져옴)
   const [user,setUser] = useState(() => {
     const params = new URLSearchParams(window.location.search)
     const userFromUrl = params.get('user')
 
+    // URL에 유저 데이터 넘어온 경우 로컬스토리지에 동기화 및 주소창 정리
     if(userFromUrl){
       try{
         const parsedUser = JSON.parse(decodeURIComponent(userFromUrl))
@@ -22,6 +25,7 @@ export default function App() {
       } catch (e) {console.error(e)}
     }
 
+    // URL에 없으면 로컬스토리지 세션 확인
     const savedUser = localStorage.getItem('user')
     return savedUser ? JSON.parse(savedUser) : null
   })
@@ -33,41 +37,36 @@ export default function App() {
     const params = new URLSearchParams(window.location.search)
     const action = params.get('action')
 
-    if(action === 'clear'){
-      localStorage.removeItem('user')
-      setUser(null)
-
-      const nextUrl = params.get('next')
-      if(nextUrl) {
-        window.location.href = nextUrl
-      }
-      return
-    }
-    
+    // 유저 정보 없으면 접근 막기 (로그인 페이지로 강제 이동)
     if(!user && !localStorage.getItem('user')){
       if(action === 'done') return
       const currentUrl = window.location.origin
       window.location.href = `http://localhost:3000/login?from=protected&redirect=${encodeURIComponent(currentUrl)}`
     }
 
+    // 다른 탭에서 로그아웃 시 현재 페이지도 로그아웃
     const checkAuth = () => {
       const checkStorage = localStorage.getItem('user')
       if (user && !checkStorage){
-        alert("세션이 만료되었거나 다른 창에서 로그아웃되었습니다.")
         setUser(null)
       }
     }
 
+    // 2초마다 스토리지 상태 확인
     const timer = setInterval(checkAuth, 2000)
     return () => clearInterval(timer)
   }, [user])
 
+  // 로그아웃 시 로컬스토리지 유저 정보 비우고 수강신청페이지에 로그아웃 신호 (action=done 전달)
   const handleLogout = () => {
+    localStorage.removeItem('user')
     window.location.href = "http://localhost:3000/login?action=done"
   }
 
+  // 로그인되지 않은 상태에서는 렌더링 차단
   if(!user && !localStorage.getItem('user')) return null
 
+  // 장바구니 담기/취소 (basket 변수로 관리)
   const addBasket = (id, isAdding) => {
     if(isAdding){
       const already = lectures.find(lectures => lectures.id === id && lectures.basket)
@@ -77,6 +76,7 @@ export default function App() {
       }
     }
 
+    // 우선순위(seq) 부여, 희망 인원(wish) 증감 처리
     setLectures(prev => {
       if(!Array.isArray(prev)) return prev
       
@@ -172,6 +172,7 @@ export default function App() {
         onAdd={addBasket}
       />
   
+      {/*테스트용*/}
       <a href='http://localhost:3000/sugang'>수강신청 페이지 이동</a>
     </div>
   )

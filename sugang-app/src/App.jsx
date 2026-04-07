@@ -16,21 +16,26 @@ import ProtectRoutes from './component/ProtectRoutes'
 import { useState } from 'react'
 import { useEffect } from 'react'
 
+// 컴포넌트들 호출 및 로직 담당
 export default function App() {
 
+  // 로컬 스토리지 저장된 유저 정보 불러오기
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('user')
     return savedUser ? JSON.parse(savedUser) : null
   })
+
   const [userInfo, setUserInfo] = useState(data.userInfo)
   const [credits, setCredits] = useState(data.credits)
   const [lectures, setLectures] = useState(data.lectures)
 
+  // 로그인 로직 (유저 정보 저장 및 로컬스토리지에 동기화)
   const handleLogin = (userInfo) => {
     setUser(userInfo)
     localStorage.setItem('user', JSON.stringify(userInfo))
   }
 
+  // 다른 탭에서 로그아웃 시 로그아웃 진행
   useEffect(() => {
     const checkAuth = () => {
       const checkStorage = localStorage.getItem('user')
@@ -43,6 +48,7 @@ export default function App() {
     return () => clearInterval(timer)
   }, [user])
 
+  // 로그아웃 로직 (로컬스토리지 비우고 장바구니 페이지에 로그아웃 신호)
   const handleLogout = () => {
     localStorage.removeItem('user')
     setUser(null)
@@ -50,11 +56,13 @@ export default function App() {
     window.location.href = `http://localhost:3001?action=clear&next=${encodeURIComponent(returnUrl)}`
   }
   
+  // 상태 초기화 (로그인 페이지 전달용)
   const clearUserState = () => {
     setUser(null)
     localStorage.removeItem('user')
   }
 
+  // 시간대 중복 검사 위한 시간대 추출 로직
   const parseTimes = (timesStr) => {
     if(!timesStr) return false
   
@@ -70,15 +78,18 @@ export default function App() {
     return allSlots
   }
 
+  // 수강신청 로직
   const handleSugang = (code,division) => {
     const target = lectures.find(lectures => lectures.code === code && lectures.division === division)
     if(!target) return
 
+    // 이미 신청했거나 대기 중인 강의
     if(target.status === "sugang" || target.status === "waiting"){
       alert("이미 처리된 과목입니다.")
       return
     }
 
+    // 과목 코드 동일 (이미 신청완료된 강의와 동일)
     const isSameCode = lectures.some(
       lectures => lectures.code === code && lectures.status === "sugang"
     )
@@ -87,10 +98,12 @@ export default function App() {
       return
     }
 
+
     const occupiedSlots = lectures.filter(l=>l.status === "sugang").flatMap(l=>parseTimes(l.times))
     const targetSlots = parseTimes(target.times)
     const isConflict = targetSlots.some(slot=>occupiedSlots.includes(slot))
 
+    // 시간대 중복되는 경우 (이미 신청완료된 강의와 중복)
     if (isConflict) {
       alert("이미 신청된 과목과 시간대가 겹쳐 신청이 불가능합니다.")
       return
@@ -98,6 +111,7 @@ export default function App() {
     
     const isFull = target.current >= target.limit
 
+    // 정원 초과 시 (대기열 여부 결정)
     if(isFull) {
       const waitingCount = lectures.filter(l=>l.status === "waiting").length
       if(waitingCount >= 2){
@@ -109,6 +123,7 @@ export default function App() {
 
     const newStatus = isFull ? "waiting" : "sugang"
 
+    // 동일 과목 다른 분반은 중복 대기 불가
     if(lectures.some(l=>l.code === code && l.status === "waiting")){
       if(isFull){
         alert("이미 해당 과목의 다른 분반이 대기열에 존재합니다.")
@@ -117,6 +132,7 @@ export default function App() {
       else alert("대기 중인 과목을 취소하고 신청합니다.")
     }
     
+    // 최종 강의 상태 반영
     setLectures(prev =>
       prev.map(lectures => {
         if(lectures.code === code && lectures.division === division){
@@ -139,6 +155,7 @@ export default function App() {
     )
   }
 
+  // 신청 취소 로직
   const handleCancel = (code,division) => {
     setLectures(prev =>
       prev.map(lectures => lectures.code === code && lectures.division === division ? 
@@ -148,6 +165,7 @@ export default function App() {
     )
   }
 
+  // 장바구니 페이지로 이동 (유저 정보 넘기면서 새 창 열기)
   const handleLink = (e) => {
       e.preventDefault()
       if(!user){
@@ -161,25 +179,31 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className='app'>
+        {/*로그인 후 헤더, 사이드바 호출*/}
         {user && <Header user={user} onLogout={handleLogout}/>}
         {user && <Sidebar goBasket={handleLink}/>}
 
+        {/*로그인하면 수강신청페이지로 그 외엔 로그인페이지로 접속*/}
         <Routes>
           <Route path='/' element={user ? <Navigate to='/sugang'/> : <Navigate to='/login'/>}
           />
 
+          {/*로그인 페이지 (로그인된 유저가 접속하면 수강신청 페이지로 보냄)*/}
           <Route path='/login' element={
             (user && !window.location.search.includes('action=done')) ? 
             <Navigate to='/sugang'/> : 
             <LoginPage onLogin={handleLogin} onLogout={clearUserState}/>
           }/>
 
+          {/*로그인한 사용자만 접근 가능*/}
           <Route element={<ProtectRoutes user={user}/>}>
+            {/*메인 수강신청 페이지*/}
             <Route path='/sugang' element={
               <main className='container'>
                 <Bar text={"수강신청"}/>
 
                 <div className='content'>
+                  {/*왼쪽 영역 : 유저정보, 담은강의목록, 신청내역, 대기열내역, 요약표*/}
                   <div className='left'>
                     <UserInfo 
                       userInfo={userInfo}
@@ -199,6 +223,7 @@ export default function App() {
                     />
                     <Summary data={lectures}/>
                   </div>
+                  {/*우측 영역 : 시간표*/}
                   <div className='right'>
                     <Timetable data={lectures}/>
                   </div>
@@ -207,6 +232,7 @@ export default function App() {
             }
           />
 
+          {/*부가적인 페이지들은 연동만 진행해둔 상태*/}
           <Route path='/notice' element={
             <>
               <Bar text={"수강안내문"}/>
