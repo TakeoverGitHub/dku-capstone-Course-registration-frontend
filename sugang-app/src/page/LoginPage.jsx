@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react"
 import styles from "./LoginPage.module.css"
 import { useLocation, useNavigate } from "react-router-dom"
 import logo from '../../../public/top_logo.png'
+import api from "../axios.jsx"
 
 export default function LoginPage({onLogin, onLogout}){
     const location = useLocation()
@@ -35,22 +36,25 @@ export default function LoginPage({onLogin, onLogout}){
     const [id, setId] = useState('')
     const [pw, setPw] = useState('')
 
-    const handleSubmit = (e) => {
-        e.preventDefault()
-        if(Number(id) === 12345678 && pw === "1234"){
-            const userInfo = {id:12345678, name:"홍길동"}
-            onLogin(userInfo)
-            const params = new URLSearchParams(window.location.search)
-            const redirecUrl = params.get('redirect')
+    // 로그인 로직
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            // 백엔드에 작성한 @PostMapping("/api/login") 호출
+            const response = await api.post('/login', {
+                studentId: id, // 사용자가 입력한 학번
+                password: pw  // 사용자가 입력한 비밀번호
+            });
 
-            if(redirecUrl){
-                const userStr = encodeURIComponent(JSON.stringify(userInfo))
-                window.location.href = `${redirecUrl}?user=${userStr}`
-            } else{
-                navigate('/')
+            // 로그인 성공 시 서버에서 학생 정보(studentId, name 등)를 반환받음
+            if (response.data) {
+                onLogin(response.data); // App.jsx의 상태 업데이트
+                navigate('/');
             }
-        } else alert("학번 또는 비밀번호가 틀렸습니다.")
-    }
+        } catch (error) {
+            alert(error.response?.data?.message || "학번 또는 비밀번호가 틀렸습니다.");
+        }
+    };
 
     return(
         <div className={styles.login}>

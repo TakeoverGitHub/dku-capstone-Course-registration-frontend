@@ -13,7 +13,7 @@ export default function Header({user,onLogout}){
             </img>
 
             <div className={styles.userInfo}>
-                {user.name}({user.id})
+                {user.name}({user.studentId})
                 <button className={styles.button} onClick={()=>{onLogout()}}>로그아웃</button>
             </div>
         </div>

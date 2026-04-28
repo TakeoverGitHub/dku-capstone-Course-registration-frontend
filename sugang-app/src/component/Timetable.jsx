@@ -2,55 +2,49 @@ import styles from "./Timetable.module.css"
 import React from "react"
 
 // 시간표 (수강신청내역, 대기열신청내역에 추가된 강의들 시각화)
-export default function Timetable({data}){
+export default function Timetable({ enrolledData, waitingData }) {
     
-    // 시간표 그리기
     const days = ['월', '화', '수', '목', '금', '토']
-    const times = Array.from({length:24}, (_,i) => i+1)
+    const times = Array.from({length: 24}, (_, i) => i + 1)
 
-    // 넘겨받은 데이터에서 시간 정보 추출
-    const getSubject = (day, period) => {
-        const sub = data.filter(lecture => {
-            if(!lecture.times || !lecture.status) return false
+    const dayMap = {
+        'MON': '월', 'TUE': '화', 'WED': '수', 
+        'THU': '목', 'FRI': '금', 'SAT': '토', 'SUN': '일'
+    }
 
-            const timePart = lecture.times.split('(')[0]
-            const daysArray = timePart.split('/')
-            const targetDayStr = daysArray.find(d => d.trim().startsWith(day))
-
-            if(!targetDayStr) return false
-
-            const periods = targetDayStr.replace(day, "").split(',')
-            return periods.some(p=>p.trim() === String(period))
+    const getSubjectStatus = (day, period) => {
+        // 1. 수강 확정 데이터에서 먼저 찾기
+        const isEnrolled = enrolledData.some(lecture => {
+            const lectureDay = dayMap[lecture.dayOfWeek] || lecture.dayOfWeek
+            return lectureDay === day && period >= lecture.startTime && period <= lecture.endTime
         })
+        if (isEnrolled) return styles.sugangCell
 
-        if(sub.length === 0) return ""
+        // 2. 확정 내역에 없다면 대기열 데이터에서 찾기
+        const isWaiting = waitingData.some(lecture => {
+            const lectureDay = dayMap[lecture.dayOfWeek] || lecture.dayOfWeek
+            return lectureDay === day && period >= lecture.startTime && period <= lecture.endTime
+        })
+        if (isWaiting) return styles.waitingCell
 
-        const hasSugang = sub.some(l=>l.status === "sugang")
-        const hasWaiting = sub.some(l=>l.status === "waiting")
-        
-        // 수강확정 강의는 회색, 대기 중인 강의는 파란색으로
-        if(hasSugang) return styles.sugangCell
-        if(hasWaiting) return styles.waitingCell
         return ""
     }
 
-    return(
+    return (
         <div className={styles.timetable}>
-            {/*시간표 틀 구성*/}
             <div className={styles.grid}>
                 <div className={`${styles.cell} ${styles.label}`}/>
-                {days.map(day=><div key={day} className={`${styles.cell} ${styles.label}`}>{day}</div>)}
+                {days.map(day => <div key={day} className={`${styles.cell} ${styles.label}`}>{day}</div>)}
             </div>
 
-            {/*해당되는 칸 칠하기*/}
             <div className={styles.grid}>
-                {times.map(time=>(
+                {times.map(time => (
                     <React.Fragment key={time}>
                         <div className={styles.cell}>{time}</div>
-                        {days.map(day=>{
-                            const status = getSubject(day,time)
-                            return(
-                                <div key={`${day}-${time}`} className={`${styles.cell} ${status}`}/>
+                        {days.map(day => {
+                            const statusClass = getSubjectStatus(day, time)
+                            return (
+                                <div key={`${day}-${time}`} className={`${styles.cell} ${statusClass}`}/>
                             )
                         })}
                     </React.Fragment>

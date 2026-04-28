@@ -8,13 +8,11 @@ import Sugang from "./component/Sugang"
 import SugangStatus from "./component/SugangStatus"
 import WaitingList from "./component/WaitingList"
 import Summary from "./component/Summary"
-import data from "../../db/sugangData.json"
 import { BrowserRouter, Route, Routes, Navigate, useNavigate } from 'react-router-dom'
-import TimetablePage from './page/TimetablePage'
 import LoginPage from './page/LoginPage'
 import ProtectRoutes from './component/ProtectRoutes'
-import { useState } from 'react'
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import api from './axios.jsx'
 
 // 컴포넌트들 호출 및 로직 담당
 export default function App() {
@@ -25,9 +23,8 @@ export default function App() {
     return savedUser ? JSON.parse(savedUser) : null
   })
 
-  const [userInfo, setUserInfo] = useState(data.userInfo)
-  const [credits, setCredits] = useState(data.credits)
-  const [lectures, setLectures] = useState(data.lectures)
+  const [studentData, setStudentData] = useState([])
+  const [lectures, setLectures] = useState([])
 
   // 로그인 로직 (유저 정보 저장 및 로컬스토리지에 동기화)
   const handleLogin = (userInfo) => {
@@ -62,6 +59,32 @@ export default function App() {
     localStorage.removeItem('user')
   }
 
+  const refreshData = async () => {
+    const studentId = user?.studentId
+    if (!studentId) {
+        console.warn("학번 정보가 없어 요청을 중단합니다.");
+        return;
+    }
+    try {
+      // 1. 전체 강의 목록 가져오기 (CourseService 연동)
+      const courseRes = await api.get('/courses');
+      setLectures(courseRes.data);
+
+      // 2. 학생 마이페이지 정보 가져오기 (EnrollmentService 연동)
+      // user.id는 로그인 시 저장된 학번이라고 가정
+      const myPageRes = await api.get(`/enroll/mypage/${studentId}`);
+      setStudentData(myPageRes.data);
+    } catch (error) {
+      console.error("데이터 로드 중 오류 발생:", error);
+    }
+  };
+
+  useEffect(() => {
+    if(user && user.studentId){
+      refreshData();
+    }
+  }, [user]);
+
   // 시간대 중복 검사 위한 시간대 추출 로직
   const parseTimes = (timesStr) => {
     if(!timesStr) return false
@@ -79,91 +102,44 @@ export default function App() {
   }
 
   // 수강신청 로직
-  const handleSugang = (code,division) => {
-    const target = lectures.find(lectures => lectures.code === code && lectures.division === division)
-    if(!target) return
-
-    // 이미 신청했거나 대기 중인 강의
-    if(target.status === "sugang" || target.status === "waiting"){
-      alert("이미 처리된 과목입니다.")
-      return
-    }
-
-    // 과목 코드 동일 (이미 신청완료된 강의와 동일)
-    const isSameCode = lectures.some(
-      lectures => lectures.code === code && lectures.status === "sugang"
-    )
-    if(isSameCode){
-      alert("이미 신청된 과목과 교과목번호가 동일한 과목입니다.")
-      return
-    }
-
-
-    const occupiedSlots = lectures.filter(l=>l.status === "sugang").flatMap(l=>parseTimes(l.times))
-    const targetSlots = parseTimes(target.times)
-    const isConflict = targetSlots.some(slot=>occupiedSlots.includes(slot))
-
-    // 시간대 중복되는 경우 (이미 신청완료된 강의와 중복)
-    if (isConflict) {
-      alert("이미 신청된 과목과 시간대가 겹쳐 신청이 불가능합니다.")
-      return
-    }
-    
-    const isFull = target.current >= target.limit
-
-    // 정원 초과 시 (대기열 여부 결정)
-    if(isFull) {
-      const waitingCount = lectures.filter(l=>l.status === "waiting").length
-      if(waitingCount >= 2){
-        alert("최대 2과목까지만 대기 가능합니다.")
-        return
+  const handleSugang = async (courseId) => {
+    try {
+      const response = await api.post('/enroll', {
+        studentId: user.studentId,
+        courseId: courseId
+      });
+      
+      if (response.data === "SUCCESS") {
+        alert("수강 신청 완료!");
+      } else if (response.data === "WAITING") {
+        alert("정원 초과로 대기열에 등록되었습니다.");
       }
-      else alert("정원이 초과되어 대기열로 신청됩니다.")
+
+      // 서버의 최신 상태를 반영하기 위해 데이터를 다시 불러옵니다.
+      await refreshData(); 
+    } catch (error) {
+      alert(error.response?.data?.message || "신청에 실패했습니다.");
     }
-
-    const newStatus = isFull ? "waiting" : "sugang"
-
-    // 동일 과목 다른 분반은 중복 대기 불가
-    if(lectures.some(l=>l.code === code && l.status === "waiting")){
-      if(isFull){
-        alert("이미 해당 과목의 다른 분반이 대기열에 존재합니다.")
-        return
-      }
-      else alert("대기 중인 과목을 취소하고 신청합니다.")
-    }
-    
-    // 최종 강의 상태 반영
-    setLectures(prev =>
-      prev.map(lectures => {
-        if(lectures.code === code && lectures.division === division){
-          return{
-            ...lectures, status:newStatus, 
-            current: newStatus === "sugang" ? lectures.current + 1 : lectures.current,
-            totalwaiting: newStatus === "waiting" ? lectures.totalwaiting + 1 : lectures.totalwaiting,
-            mywaiting: newStatus === "waiting" ? lectures.totalwaiting + 1 : null
-          }
-        }
-        
-        if(newStatus === "sugang" && lectures.code === code && lectures.status === "waiting"){
-          return{
-            ...lectures, status: "", mywaiting: ""
-          }
-        }
-
-        return lectures
-      })
-    )
-  }
+  };
 
   // 신청 취소 로직
-  const handleCancel = (code,division) => {
-    setLectures(prev =>
-      prev.map(lectures => lectures.code === code && lectures.division === division ? 
-        {...lectures, status:"", 
-          current:lectures.status === "sugang" ? 
-          Math.max(0,lectures.current-1) : lectures.current} : lectures)
-    )
-  }
+  const handleCancel = async (courseId) => {
+    try {
+      const response = await api.post('/enroll/cancel', {
+        studentId: user.studentId,
+        courseId: courseId
+      });
+
+      // 백엔드 응답이 객체이므로 response.data.status 확인
+      if (response.data.status === "CANCEL_SUCCESS") {
+        alert("수강 취소가 완료되었습니다.");
+        await refreshData();
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || "취소 처리 중 오류가 발생했습니다.";
+      alert(message);
+    }
+  };
 
   // 장바구니 페이지로 이동 (유저 정보 넘기면서 새 창 열기)
   const handleLink = (e) => {
@@ -205,64 +181,40 @@ export default function App() {
                 <div className='content'>
                   {/*왼쪽 영역 : 유저정보, 담은강의목록, 신청내역, 대기열내역, 요약표*/}
                   <div className='left'>
-                    <UserInfo 
-                      userInfo={userInfo}
-                      credits={credits}
-                    />
-                    <Sugang 
-                      data={lectures}
-                      onRegister={handleSugang}
-                    />
-                    <SugangStatus 
-                      data={lectures.filter(lectures => lectures.status === "sugang")}
-                      onDelete={handleCancel}
-                    />
-                    <WaitingList 
-                      data={lectures.filter(lectures => lectures.status === "waiting")}
-                      onDelete={handleCancel}
-                    />
-                    <Summary data={lectures}/>
-                  </div>
+                  <UserInfo
+                    studentData={studentData}
+                    userData={user}
+                  />
+                  <Sugang 
+                    data={lectures}
+                    onRegister={handleSugang}
+                  />
+                  <SugangStatus 
+                    // 마이페이지 데이터에서 확정된 강의만 필터링해서 전달
+                    data={studentData?.enrolledCourses || []}
+                    onDelete={handleCancel}
+                  />
+                  <WaitingList 
+                    // 마이페이지 데이터에서 대기 중인 강의만 전달
+                    data={studentData?.waitingCourses || []}
+                    onDelete={handleCancel}
+                  />
+                  <Summary 
+                    enrolledCourses={studentData?.enrolledCourses} 
+                    waitingCourses={studentData?.waitingCourses} 
+                  />
+                </div>
                   {/*우측 영역 : 시간표*/}
                   <div className='right'>
-                    <Timetable data={lectures}/>
+                    <Timetable 
+                      enrolledData={studentData?.enrolledCourses || []} 
+                      waitingData={studentData?.waitingCourses || []} 
+                    />
                   </div>
                 </div>
               </main>
             }
           />
-
-          {/*부가적인 페이지들은 연동만 진행해둔 상태*/}
-          <Route path='/notice' element={
-            <>
-              <Bar text={"수강안내문"}/>
-            </>
-          }/>
-
-          <Route path='/timetable' element={
-            <>
-              <Bar text={"수강시간표"}/>
-              <TimetablePage data={lectures}/>
-            </>
-          }/>
-
-          <Route path='/confirmation' element={
-            <>
-              <Bar text={"수강신청확인서"}/>
-            </>
-          }/>
-
-          <Route path='/lecture' element={
-            <>
-              <Bar text={"종합강의시간표"}/>
-            </>
-          }/>
-
-          <Route path='/helper' element={
-            <>
-              <Bar text={"수강계획도우미 등록(학부)"}/>
-            </>
-          }/>
           </Route>
         </Routes>
       </div>
