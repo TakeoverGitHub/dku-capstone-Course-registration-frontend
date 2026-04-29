@@ -5,6 +5,7 @@ import Btable from './component/Btable'
 import { useEffect, useState } from 'react'
 import Bsummary from './component/Bsummary'
 import Bsearch from './component/Bsearch'
+import api from './axios.jsx'
 
 // 컴포넌트들 호출 및 로직 담당
 export default function App() {
@@ -29,8 +30,8 @@ export default function App() {
     return savedUser ? JSON.parse(savedUser) : null
   })
 
-  const [lectures, setLectures] = useState(data.lectures)
-  const [credits, setCredits] = useState(data.credits)
+  const [lectures, setLectures] = useState([])
+  const [credits, setCredits] = useState({ total: 0, major: 0, general: 0 })
   
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
