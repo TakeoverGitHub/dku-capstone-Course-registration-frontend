@@ -1,0 +1,41 @@
+.timetable{
+    display: flex;
+    flex-direction: column;
+    color: #686868;
+    font-size: 10px;
+    box-sizing: border-box;
+    background-color: #FFFFFF;
+    border-top: 1px solid #D5D5D5;
+    border-left: 1px solid #D5D5D5;
+}
+
+.grid{
+    display: grid;
+    grid-template-columns: 36px repeat(6,36px);
+}
+
+.cell{
+    width: 36px;
+    height: 27px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #D5D5D5;
+    border-right: 1px solid #D5D5D5;
+}
+
+.label{
+    background-color: #ECF0F9;
+    font-weight: bold;
+}
+
+.sugangCell{
+    background-color: #F1F1F1 !important;
+}
+
+.waitingCell{
+    background-color: #6F6FD7 !important;
+}
+
