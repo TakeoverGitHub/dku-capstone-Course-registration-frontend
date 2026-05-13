@@ -5,7 +5,6 @@ import styles from "./Bsearch.module.css"
 export default function Bsearch({data,onAdd}){
 
     // 데이터 읽고 초기값 세팅
-    const [lectures] = useState(data)
     const [filtered, setFiltered] = useState([])
     const [searchType, setSearchType] = useState("전공")
     const [searchParams, setSearchParams] = useState({
@@ -25,18 +24,18 @@ export default function Bsearch({data,onAdd}){
 
     // 선택한 옵션 기반으로 검색 로직
     const onSearch = () => {
-        const filterResult = lectures.filter(sub => {
-            const matchType = !searchType || sub.type2 === searchType
+        const filterResult = data.filter(sub => {
+            const matchType = !searchType || sub.courseType === searchType
             const matchCampus = searchParams.campus === "" || sub.campus === searchParams.campus
             
             let matchDetail = true
             if(searchType === '교양'){
-                matchDetail = !searchParams.category || sub.category === searchParams.category
+                matchDetail = searchParams.category === "" || sub.category === searchParams.category
             } else {
-                matchDetail = !searchParams.major || sub.major === searchParams.major
+                matchDetail = searchParams.major === "" || sub.major.includes(searchParams.major)
             }
-            const matchCourseName = searchParams.courseName === "" || sub.name.includes(searchParams.courseName)
-            const matchDay = searchParams.day === "" || sub.times.includes(searchParams.day)
+            const matchCourseName = searchParams.courseName === "" || sub.courseName.includes(searchParams.courseName)
+            const matchDay = searchParams.day === "" || sub.dayOfWeek === searchParams.day
             const matchGrade = searchParams.grade === "" || String(sub.grade) === searchParams.grade
 
             return matchType && matchCampus && matchDetail && matchCourseName && matchDay && matchGrade
@@ -59,6 +58,7 @@ export default function Bsearch({data,onAdd}){
         setFiltered([])
     }
 
+    console.log(data)
     return(
         <>
             <div className={styles.header}>
@@ -103,9 +103,9 @@ export default function Bsearch({data,onAdd}){
                     {(searchType === '전공' || searchType === '학문기초') && (
                         <select className={styles.selectMedium} name="major" onChange={handleChange} value={searchParams.major}>
                             <option value="">전공명</option>
-                            <option value="AI융합 소프트웨어학과">AI융합 소프트웨어학과</option>
-                            <option value="AI융합 컴퓨터공학과">AI융합 컴퓨터공학과</option>
-                            <option value="AI융합 통계데이터사이언스학과">AI융합 통계데이터사이언스학과</option>
+                            <option value="SW융합 소프트웨어학과">SW융합 소프트웨어학과</option>
+                            <option value="SW융합 컴퓨터공학과">SW융합 컴퓨터공학과</option>
+                            <option value="SW융합 통계데이터사이언스학과">SW융합 통계데이터사이언스학과</option>
                         </select>
                     )}
 
@@ -149,44 +149,38 @@ export default function Bsearch({data,onAdd}){
                 <thead>
                     <tr>
                         <th style={{width:"5%"}}>추가</th>
-                        {searchType != '교양' && <th style={{width:"4%"}}>학년</th>}
+                        {searchType != '교양' && <th style={{width:"5%"}}>학년</th>}
                         <th style={{width:"8%"}}>이수구분</th>
-                        <th style={{width:"8%"}}>교과목번호</th>
-                        <th style={{width:"3%"}}>분반</th>
-                        <th style={{width:"15%"}}>교과목명</th>
+                        <th style={{width:"10%"}}>교과목번호</th>
+                        <th style={{width:"5%"}}>분반</th>
+                        <th style={{width:"20%"}}>교과목명</th>
                         <th style={{width:"3%"}}>학점</th>
-                        <th style={{width:"5%"}}>교강사</th>
-                        <th style={{width:"5%"}}>강의언어</th>
-                        <th style={{width:"25%"}}>요일/교시/강의실</th>
+                        <th style={{width:"25%"}}>요일/교시</th>
                         <th style={{width:"5%"}}>잔여석</th>
-                        <th style={{width:"6%"}}>수업유형</th>
-                        <th style={{width:"8%"}}>수강조직</th>
+                        <th style={{width:"14%"}}>수강조직</th>
                     </tr>
                 </thead>
                 <tbody>
                     {/*필터링된 데이터만 화면에 띄워주는 역할*/}
                     {filtered.length > 0 ? (
                         filtered.map(sub => (
-                            <tr key={sub.id}>
-                                <td><button className={styles.button} onClick={()=>onAdd(sub.id, true)}>
+                            <tr key={sub.courseId}>
+                                <td><button className={styles.button} onClick={()=>onAdd(sub.courseId)}>
                                     추가</button></td>
                                 {searchType != '교양' && <td>{sub.grade}</td>}
                                 <td>{sub.category}</td>
-                                <td>{sub.code}</td>
-                                <td>{sub.division}</td>
-                                <td className={styles.nameCell}>{sub.name}</td>
-                                <td>{sub.credits}</td>
-                                <td>{sub.professor}</td>
-                                <td>{sub.language}</td>
-                                <td className={styles.nameCell}>{sub.times}</td>
+                                <td>{sub.courseCode}</td>
+                                <td>{sub.classNo}</td>
+                                <td className={styles.nameCell}>{sub.courseName}</td>
+                                <td>{sub.credit}</td>
+                                <td className={styles.nameCell}>{sub.dayOfWeek}{sub.startTime} ~ {sub.endTime}</td>
                                 <td>{sub.remain}</td>
-                                <td>{sub.type}</td>
                                 <td>{sub.major}</td>
                             </tr>
                         ))
                     ) : (
                         <tr>
-                            <td colSpan={13}>
+                            <td colSpan={10}>
                                 조회된 데이터가 없습니다.
                             </td>
                         </tr>

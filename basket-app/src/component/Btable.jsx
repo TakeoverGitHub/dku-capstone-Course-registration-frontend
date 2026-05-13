@@ -4,7 +4,8 @@ import styles from "./Btable.module.css"
 export default function Btable({data,onRemove,onSwap,onMove}){
 
     // 우선순위 기준 정렬
-    const basketList = (data || []).sort((a,b) => (a.seq || 0) - (b.seq || 0))
+    // 필터링 (모든 과목 받아서 사용자가 담은 강의만 뜨도록)
+    
 
     return(
         <>
@@ -16,38 +17,32 @@ export default function Btable({data,onRemove,onSwap,onMove}){
                 <thead>
                     <tr>
                         <th style={{width:"5%"}}>삭제</th>
-                        <th style={{width:"4%"}}>캠퍼스</th>
-                        <th style={{width:"10%"}}>교과목-분반</th>
-                        <th style={{width:"20%"}}>교과목명</th>
+                        <th style={{width:"5%"}}>과목코드</th>
+                        <th style={{width:"5%"}}>분반</th>
+                        <th style={{width:"22%"}}>교과목명</th>
                         <th style={{width:"5%"}}>학점</th>
-                        <th style={{width:"5%"}}>교강사</th>
-                        <th style={{width:"7%"}}>강의언어</th>
-                        <th style={{width:"25%"}}>요일/교시/강의실</th>
-                        <th style={{width:"2%"}}>희망 인원</th>
-                        <th style={{width:"2%"}}>제한 인원</th>
-                        <th style={{width:"4%"}}>잔여석</th>
-                        <th style={{width:"2%"}}>폐강</th>
-                        <th style={{width:"9%"}}>순위변경</th>
+                        <th style={{width:"28%"}}>요일/교시</th>
+                        <th style={{width:"6%"}}>희망 인원</th>
+                        <th style={{width:"6%"}}>제한 인원</th>
+                        <th style={{width:"5%"}}>잔여석</th>
+                        <th style={{width:"13%"}}>순위변경</th>
                     </tr>
                 </thead>
                 <tbody>
                     {/*담은 강의 목록 출력*/}
-                    {basketList.length > 0 ? basketList.map((sub,index) => (
-                        <tr key={sub.id}>
+                    {data.length > 0 ? data.map((sub,index) => (
+                        <tr key={sub.courseId}>
                             {/*삭제 버튼으로 취소 가능*/}
-                            <td><button className={styles.button} onClick={()=>onRemove(sub.id)}>
+                            <td><button className={styles.button} onClick={()=>onRemove(sub.courseId)}>
                                 삭제</button></td>
-                            <td>{sub.campus}</td>
-                            <td>{sub.code}</td>
-                            <td className={styles.nameCell}>{sub.name}</td>
-                            <td>{sub.credits}</td>
-                            <td>{sub.professor}</td>
-                            <td>{sub.language}</td>
-                            <td className={styles.nameCell}>{sub.times}</td>
+                            <td>{sub.courseCode}</td>
+                            <td>{sub.classNo}</td>
+                            <td className={styles.nameCell}>{sub.courseName}</td>
+                            <td>{sub.credit}</td>
+                            <td className={styles.nameCell}>{sub.dayOfWeek}{sub.startTime} ~ {sub.endTime}</td>
                             <td>{sub.wish}</td>
-                            <td>{sub.limit}</td>
+                            <td>{sub.maxCapacity}</td>
                             <td>{sub.remain}</td>
-                            <td>{sub.cancel}</td>
                             <td>
                                 {/*우선순위 변경 버튼*/}
                                 <span className={styles.orderBtn} onClick={()=>onSwap(sub.id, basketList[index-1]?.id)}>
@@ -62,7 +57,7 @@ export default function Btable({data,onRemove,onSwap,onMove}){
                         </tr>
                     )) : (
                         <tr>
-                            <td colSpan={13}>
+                            <td colSpan={10}>
                                 조회된 데이터가 없습니다.
                             </td>
                         </tr>

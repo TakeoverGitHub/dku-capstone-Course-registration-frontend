@@ -7,23 +7,20 @@ export default function Timetable({ enrolledData, waitingData }) {
     const days = ['월', '화', '수', '목', '금', '토']
     const times = Array.from({length: 24}, (_, i) => i + 1)
 
-    const dayMap = {
-        'MON': '월', 'TUE': '화', 'WED': '수', 
-        'THU': '목', 'FRI': '금', 'SAT': '토', 'SUN': '일'
-    }
-
     const getSubjectStatus = (day, period) => {
-        // 1. 수강 확정 데이터에서 먼저 찾기
+        // 1. 수강 확정 데이터에서 찾기
         const isEnrolled = enrolledData.some(lecture => {
-            const lectureDay = dayMap[lecture.dayOfWeek] || lecture.dayOfWeek
-            return lectureDay === day && period >= lecture.startTime && period <= lecture.endTime
+            return lecture.dayOfWeek === day && 
+                period >= lecture.startTime && 
+                period <= lecture.endTime
         })
         if (isEnrolled) return styles.sugangCell
 
-        // 2. 확정 내역에 없다면 대기열 데이터에서 찾기
+        // 2. 대기열 데이터에서 찾기
         const isWaiting = waitingData.some(lecture => {
-            const lectureDay = dayMap[lecture.dayOfWeek] || lecture.dayOfWeek
-            return lectureDay === day && period >= lecture.startTime && period <= lecture.endTime
+            return lecture.dayOfWeek === day && 
+                period >= lecture.startTime && 
+                period <= lecture.endTime
         })
         if (isWaiting) return styles.waitingCell
 

@@ -31,7 +31,7 @@ export default function App() {
   })
 
   const [lectures, setLectures] = useState([])
-  const [credits, setCredits] = useState({ total: 0, major: 0, general: 0 })
+  const [cartItems, setCartItems] = useState([])
   
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -66,7 +66,52 @@ export default function App() {
   // 로그인되지 않은 상태에서는 렌더링 차단
   if(!user && !localStorage.getItem('user')) return null
 
-  // 장바구니 담기/취소 (basket 변수로 관리)
+  const refreshData = async () => {
+    const studentId = user?.studentId
+    if (!studentId) {
+        console.warn("학번 정보가 없어 요청을 중단합니다.");
+        return;
+    }
+    try {
+      // 1. 전체 강의 목록 가져오기 (CourseService 연동)
+      const courseRes = await api.get('/courses');
+      // 2. 장바구니 테이블 정보 가져오기 (학생 ID 기준)
+      const cartRes = await api.get(`/cart/${user.studentId}`);
+      setLectures(courseRes.data);
+      setCartItems(cartRes.data);
+    } catch (error) {
+      console.error("데이터 로드 실패:", error);
+    }
+  };
+
+  useEffect(() => {
+    if(user && user.studentId){
+      refreshData();
+    }
+  }, [user]);
+
+  // 담은 강의 목록 필터링
+  const myCartLectures = lectures.filter(lecture => 
+    cartItems.some(cart => cart.courseId === lecture.courseId)
+  );
+
+  // 장바구니 담기 new
+  const onAdd = async (courseId) => {
+    try {
+      // 1. 백엔드 POST 요청 (request body에 데이터 담기)
+      const response = await api.post('/cart', {
+        studentId: user.studentId,
+        courseId: courseId
+      });
+
+      // 3. 장바구니 목록 새로고침 (데이터 동기화)
+      refreshData();
+    } catch (error) {
+      alert(error.response?.data?.message || "이미 장바구니에 담긴 과목입니다.");
+    }
+  };
+
+  // 장바구니 담기/취소 이전 버전 (basket 변수로 관리)
   const addBasket = (id, isAdding) => {
     if(isAdding){
       const already = lectures.find(lectures => lectures.id === id && lectures.basket)
@@ -76,6 +121,7 @@ export default function App() {
       }
     }
 
+    
     // 우선순위(seq) 부여, 희망 인원(wish) 증감 처리
     setLectures(prev => {
       if(!Array.isArray(prev)) return prev
@@ -156,24 +202,21 @@ export default function App() {
       </div>
 
       <Btable 
-        data={(lectures || []).filter(lectures => lectures.basket).sort((a,b) => (a.seq || 0) - (b.seq || 0))}
+        data={(myCartLectures || [])}
         onRemove={(id) => addBasket(id,false)}
         onSwap={swapSeq}
         onMove={moveExtreme}
       />
 
       <Bsummary 
-        credits={credits}
-        lectures={lectures}
+        credits={user.maxCredit}
+        myCartLectures={myCartLectures}
       />
 
       <Bsearch 
         data={lectures}
-        onAdd={addBasket}
+        onAdd={onAdd}
       />
-  
-      {/*테스트용*/}
-      <a href='http://localhost:3000/sugang'>수강신청 페이지 이동</a>
     </div>
   )
 }

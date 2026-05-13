@@ -33,7 +33,6 @@ export default function WaitingList({data = [], onDelete}){
                             <td>{sub.classNo}</td>
                             <td className={styles.nameCell}>{sub.courseName}</td>
                             <td>{sub.credit}</td>
-                            {/*대기번호 5이하면 "5이하"로 표기*/}
                             <td>
                                 대기번호
                             </td>

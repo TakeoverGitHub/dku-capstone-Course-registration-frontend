@@ -25,6 +25,7 @@ export default function App() {
 
   const [studentData, setStudentData] = useState([])
   const [lectures, setLectures] = useState([])
+  const [cartItems, setCartItems] = useState([])
 
   // 로그인 로직 (유저 정보 저장 및 로컬스토리지에 동기화)
   const handleLogin = (userInfo) => {
@@ -68,9 +69,12 @@ export default function App() {
     try {
       // 1. 전체 강의 목록 가져오기 (CourseService 연동)
       const courseRes = await api.get('/courses');
+      // 2. 장바구니 테이블 정보 가져오기 (학생 ID 기준)
+      const cartRes = await api.get(`/cart/${user.studentId}`);
       setLectures(courseRes.data);
+      setCartItems(cartRes.data);
 
-      // 2. 학생 마이페이지 정보 가져오기 (EnrollmentService 연동)
+      // 3. 학생 마이페이지 정보 가져오기 (EnrollmentService 연동)
       // user.id는 로그인 시 저장된 학번이라고 가정
       const myPageRes = await api.get(`/enroll/mypage/${studentId}`);
       setStudentData(myPageRes.data);
@@ -84,6 +88,11 @@ export default function App() {
       refreshData();
     }
   }, [user]);
+
+  // 담은 강의 목록 필터링
+  const myCartLectures = lectures.filter(lecture => 
+    cartItems.some(cart => cart.courseId === lecture.courseId)
+  );
 
   // 시간대 중복 검사 위한 시간대 추출 로직
   const parseTimes = (timesStr) => {
@@ -186,7 +195,7 @@ export default function App() {
                     userData={user}
                   />
                   <Sugang 
-                    data={lectures}
+                    data={myCartLectures}
                     onRegister={handleSugang}
                   />
                   <SugangStatus 
