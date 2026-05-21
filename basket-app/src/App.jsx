@@ -32,7 +32,8 @@ export default function App() {
 
   const [lectures, setLectures] = useState([])
   const [cartItems, setCartItems] = useState([])
-  
+  const [myCartLectures, setMyCartLectures] = useState([])
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const action = params.get('action')
@@ -66,21 +67,45 @@ export default function App() {
   // 로그인되지 않은 상태에서는 렌더링 차단
   if(!user && !localStorage.getItem('user')) return null
 
+  // 1. 데이터 동기화 함수 (백엔드 DTO 매핑 적용 버전)
   const refreshData = async () => {
-    const studentId = user?.studentId
-    if (!studentId) {
-        console.warn("학번 정보가 없어 요청을 중단합니다.");
-        return;
-    }
+    const studentId = user?.studentId;
+    if (!studentId) return;
+    
     try {
-      // 1. 전체 강의 목록 가져오기 (CourseService 연동)
-      const courseRes = await api.get('/courses');
-      // 2. 장바구니 테이블 정보 가져오기 (학생 ID 기준)
-      const cartRes = await api.get(`/cart/${user.studentId}`);
+      // 일반 전체 과목 목록 가져오기
+      const courseRes = await api.get('/courses'); 
       setLectures(courseRes.data);
-      setCartItems(cartRes.data);
+
+      // 장바구니 DTO 리스트 수신
+      const cartRes = await api.get(`/cart/${studentId}`); 
+      setCartItems(cartRes.data); // 원본 저장
+
+      // 백엔드가 준 데이터를 priority 기준으로 오름차순 정렬하여 상태에 주입
+      const sortedCartLectures = [...cartRes.data].sort((a, b) => Number(a.priority) - Number(b.priority));
+
+      console.log("최종 정렬 및 조립 완료된 장바구니 내역:", sortedCartLectures);
+      setMyCartLectures(sortedCartLectures);
     } catch (error) {
       console.error("데이터 로드 실패:", error);
+    }
+  };
+
+  // 2. 변경된 순서를 백엔드 DB에 영구 저장하는 함수
+  const savePriorityToServer = async (updatedList) => {
+    try {
+      // 정렬된 배열에서 cartId 목록만 순서대로 추출 (예: [12, 15, 8, 23])
+      const sortedCartIds = updatedList.map(item => item.cartId);
+
+      // 백엔드 컨트롤러 구조인 { cartIds: [...] } 형식으로 put 요청
+      await api.put(`/cart/${user.studentId}/priority`, {
+        cartIds: sortedCartIds
+      });
+
+      // DB 저장이 끝나면 최신화된 데이터를 서버에서 다시 긁어옴
+      await refreshData();
+    } catch (error) {
+      alert("순서 변경 사항을 저장하지 못했습니다.");
     }
   };
 
@@ -89,11 +114,6 @@ export default function App() {
       refreshData();
     }
   }, [user]);
-
-  // 담은 강의 목록 필터링
-  const myCartLectures = lectures.filter(lecture => 
-    cartItems.some(cart => cart.courseId === lecture.courseId)
-  );
 
   // 장바구니 담기 new
   const onAdd = async (courseId) => {
@@ -111,67 +131,66 @@ export default function App() {
     }
   };
 
-  // 장바구니 담기/취소 이전 버전 (basket 변수로 관리)
-  const addBasket = (id, isAdding) => {
-    if(isAdding){
-      const already = lectures.find(lectures => lectures.id === id && lectures.basket)
-      if(already){
-        alert("이미 처리된 과목입니다.")
-        return lectures
-      }
+  // 장바구니 취소 new
+  const onDelete = async (cartId) => {
+    try {
+      // 1. 백엔드 POST 요청 (request body에 데이터 담기)
+      const response = await api.delete(`/cart/${user.studentId}/${cartId}`);
+
+      // 3. 장바구니 목록 새로고침 (데이터 동기화)
+      refreshData();
+    } catch (error) {
+      alert(error.response?.data?.message || "이미 장바구니에 담긴 과목입니다.");
     }
+  };
 
+  // 3. 강의 우선순위 한 칸씩 변경 함수
+  const swapPriority = async (currentId, targetId) => {
+    if (!targetId) return;
+
+    const listCopy = [...myCartLectures];
+    const currentLecture = listCopy.find(l => l.courseId === currentId);
+    const targetLecture = listCopy.find(l => l.courseId === targetId);
+
+    if (!currentLecture || !targetLecture) return;
+
+    // 우선순위 값 swap
+    const tempPriority = currentLecture.priority;
+    currentLecture.priority = targetLecture.priority;
+    targetLecture.priority = tempPriority;
+
+    const sortedList = listCopy.sort((a, b) => a.priority - b.priority);
+
+    // UI를 즉시 먼저 움직이게 하여 사용자 경험을 살립니다.
+    setMyCartLectures(sortedList);
     
-    // 우선순위(seq) 부여, 희망 인원(wish) 증감 처리
-    setLectures(prev => {
-      if(!Array.isArray(prev)) return prev
-      
-      const basketItems = prev.filter(l=>l.basket)
-      const maxSeq = basketItems.length > 0 ? Math.max(...basketItems.map(l=>l.seq || 0)) : 0
-      return prev.map(lectures => {
-        if(lectures.id === id){
-          return {...lectures, basket: isAdding,
-            seq: isAdding ? maxSeq + 1 : 0,
-            wish: isAdding ? (lectures.wish || 0)+1 : (lectures.wish || 0)-1
-          }
-        }
-        return lectures
-      })
-    })
-  }
+    // 백그라운드에서 백엔드 DB 저장을 요청합니다.
+    await savePriorityToServer(sortedList);
+  };
 
-  // 강의 우선순위 변경 (위 아래)
-  const swapSeq = (currentId, targetId) => {
-    if(!targetId) return
-    setLectures(prev => {
-      const currentLecture = prev.find(l=>l.id === currentId)
-      const targetLecture = prev.find(l=>l.id === targetId)
+  // 4. 강의 우선순위 맨 위/아래 변경 함수
+  const moveExtremePriority = async (currentId, type) => {
+    if (myCartLectures.length === 0) return;
 
-      return prev.map(l=>{
-        if(l.id === currentId) return {...l, seq:targetLecture.seq}
-        if(l.id === targetId) return {...l, seq:currentLecture.seq}
-        return l
-      })
-    })
-  }
+    const priorityValues = myCartLectures.map(l => l.priority || 0);
+    const minPriority = Math.min(...priorityValues);
+    const maxPriority = Math.max(...priorityValues);
 
-  // 강의 우선순위 변경 (맨 위/아래)
-  const moveExtreme = (currentId, type) => {
-    setLectures(prev => {
-      const basketLectures = prev.filter(l=>l.basket)
-      const seqValues = basketLectures.map(l=>l.seq)
+    const updated = myCartLectures.map(l => {
+      if (l.courseId === currentId) {
+        return { ...l, priority: type === 'top' ? minPriority - 1 : maxPriority + 1 };
+      }
+      return l;
+    });
 
-      const minSeq = Math.min(...seqValues)
-      const maxSeq = Math.max(...seqValues)
+    const sortedList = [...updated].sort((a, b) => a.priority - b.priority);
 
-      return prev.map(l=>{
-        if(l.id === currentId){
-          return {...l, seq:type === 'top' ? minSeq - 1 : maxSeq + 1}
-        }
-        return l
-      })
-    })
-  }
+    // UI를 즉시 먼저 움직이게 하여 사용자 경험을 살립니다.
+    setMyCartLectures(sortedList);
+    
+    // 백그라운드에서 백엔드 DB 저장을 요청합니다.
+    await savePriorityToServer(sortedList);
+  };
   
   return(
     <div className={styles.app}>
@@ -203,9 +222,9 @@ export default function App() {
 
       <Btable 
         data={(myCartLectures || [])}
-        onRemove={(id) => addBasket(id,false)}
-        onSwap={swapSeq}
-        onMove={moveExtreme}
+        onRemove={onDelete}
+        onSwap={swapPriority}
+        onMove={moveExtremePriority}
       />
 
       <Bsummary 

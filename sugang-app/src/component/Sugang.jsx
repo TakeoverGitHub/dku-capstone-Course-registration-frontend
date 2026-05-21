@@ -32,7 +32,7 @@ export default function Sugang({data, onRegister}){
                             <td>{sub.credit}</td>
                             <td className={styles.nameCell}>{sub.dayOfWeek}{sub.startTime} ~ {sub.endTime}</td>
                             <td>{sub.currentEnrollment}</td>
-                            <td>{sub.maxCapacity}</td>
+                            <td>{sub.remain}</td>
                         </tr>
                     ))}
                 </tbody>

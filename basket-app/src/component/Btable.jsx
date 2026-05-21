@@ -3,10 +3,6 @@ import styles from "./Btable.module.css"
 // 담은 강의 목록 (삭제 및 순서 변경 가능)
 export default function Btable({data,onRemove,onSwap,onMove}){
 
-    // 우선순위 기준 정렬
-    // 필터링 (모든 과목 받아서 사용자가 담은 강의만 뜨도록)
-    
-
     return(
         <>
             <div className={styles.header}>
@@ -33,7 +29,7 @@ export default function Btable({data,onRemove,onSwap,onMove}){
                     {data.length > 0 ? data.map((sub,index) => (
                         <tr key={sub.courseId}>
                             {/*삭제 버튼으로 취소 가능*/}
-                            <td><button className={styles.button} onClick={()=>onRemove(sub.courseId)}>
+                            <td><button className={styles.button} onClick={()=>onRemove(sub.cartId)}>
                                 삭제</button></td>
                             <td>{sub.courseCode}</td>
                             <td>{sub.classNo}</td>
@@ -45,13 +41,13 @@ export default function Btable({data,onRemove,onSwap,onMove}){
                             <td>{sub.remain}</td>
                             <td>
                                 {/*우선순위 변경 버튼*/}
-                                <span className={styles.orderBtn} onClick={()=>onSwap(sub.id, basketList[index-1]?.id)}>
+                                <span className={styles.orderBtn} onClick={()=>onSwap(sub.courseId, data[index-1]?.courseId)}>
                                     {'\u25B2'}</span>
-                                <span className={styles.orderBtn} onClick={()=>onSwap(sub.id, basketList[index+1]?.id)}>
+                                <span className={styles.orderBtn} onClick={()=>onSwap(sub.courseId, data[index+1]?.courseId)}>
                                     {'\u25BC'}</span>
-                                <span className={styles.orderBtn} onClick={()=>onMove(sub.id, 'top')}>
+                                <span className={styles.orderBtn} onClick={()=>onMove(sub.courseId, 'top')}>
                                     {'\u2912'}</span>
-                                <span className={styles.orderBtn} onClick={()=>onMove(sub.id, 'bottom')}>
+                                <span className={styles.orderBtn} onClick={()=>onMove(sub.courseId, 'bottom')}>
                                     {'\u2913'}</span>
                             </td>
                         </tr>

@@ -67,12 +67,12 @@ export default function App() {
         return;
     }
     try {
-      // 1. 전체 강의 목록 가져오기 (CourseService 연동)
-      const courseRes = await api.get('/courses');
-      // 2. 장바구니 테이블 정보 가져오기 (학생 ID 기준)
-      const cartRes = await api.get(`/cart/${user.studentId}`);
-      setLectures(courseRes.data);
+      // 1. 장바구니 강의 목록 가져오기 (CourseService 연동)
+      const cartRes = await api.get(`/cart/${studentId}`);
       setCartItems(cartRes.data);
+      
+      const sortedCartLectures = [...cartRes.data].sort((a, b) => Number(a.priority) - Number(b.priority));
+      setLectures(sortedCartLectures);
 
       // 3. 학생 마이페이지 정보 가져오기 (EnrollmentService 연동)
       // user.id는 로그인 시 저장된 학번이라고 가정
@@ -88,27 +88,6 @@ export default function App() {
       refreshData();
     }
   }, [user]);
-
-  // 담은 강의 목록 필터링
-  const myCartLectures = lectures.filter(lecture => 
-    cartItems.some(cart => cart.courseId === lecture.courseId)
-  );
-
-  // 시간대 중복 검사 위한 시간대 추출 로직
-  const parseTimes = (timesStr) => {
-    if(!timesStr) return false
-  
-    const timePart = timesStr.split('(')[0]
-    const daysArray = timePart.split('/')
-  
-    const allSlots = []
-    daysArray.forEach(dayStr => {
-      const day = dayStr[0]
-      const periods = dayStr.slice(1).split(',')
-      periods.forEach(p=>allSlots.push(day+p))
-    })
-    return allSlots
-  }
 
   // 수강신청 로직
   const handleSugang = async (courseId) => {
@@ -131,7 +110,7 @@ export default function App() {
     }
   };
 
-  // 신청 취소 로직
+  // 신청 취소 로직 (수강 확정 내역)
   const handleCancel = async (courseId) => {
     try {
       const response = await api.post('/enroll/cancel', {
@@ -141,6 +120,25 @@ export default function App() {
 
       // 백엔드 응답이 객체이므로 response.data.status 확인
       if (response.data.status === "CANCEL_SUCCESS") {
+        alert("수강 취소가 완료되었습니다.");
+        await refreshData();
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || "취소 처리 중 오류가 발생했습니다.";
+      alert(message);
+    }
+  };
+
+  // 신청 취소 로직 (대기열)
+  const handleWaitingCancel = async (courseId) => {
+    try {
+      const response = await api.post('/enroll/cancel-waiting', {
+        studentId: user.studentId,
+        courseId: courseId
+      });
+
+      // 백엔드 응답이 객체이므로 response.data.status 확인
+      if (response.data.status === "WAITING_CANCEL_SUCCESS") {
         alert("수강 취소가 완료되었습니다.");
         await refreshData();
       }
@@ -195,7 +193,7 @@ export default function App() {
                     userData={user}
                   />
                   <Sugang 
-                    data={myCartLectures}
+                    data={lectures}
                     onRegister={handleSugang}
                   />
                   <SugangStatus 
@@ -206,7 +204,7 @@ export default function App() {
                   <WaitingList 
                     // 마이페이지 데이터에서 대기 중인 강의만 전달
                     data={studentData?.waitingCourses || []}
-                    onDelete={handleCancel}
+                    onDelete={handleWaitingCancel}
                   />
                   <Summary 
                     enrolledCourses={studentData?.enrolledCourses} 
