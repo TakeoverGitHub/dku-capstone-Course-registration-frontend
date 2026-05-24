@@ -34,7 +34,7 @@ export default function WaitingList({data = [], onDelete}){
                             <td className={styles.nameCell}>{sub.courseName}</td>
                             <td>{sub.credit}</td>
                             <td>
-                                대기번호
+                                {sub.waitingNumber ? `${sub.waitingNumber}`:'-'}
                             </td>
                         </tr>
                         <tr>

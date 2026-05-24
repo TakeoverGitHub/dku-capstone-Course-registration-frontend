@@ -38,9 +38,18 @@ export default function App() {
     const params = new URLSearchParams(window.location.search)
     const action = params.get('action')
 
+    if (action === 'clear') {
+      localStorage.removeItem('user')
+      setUser(null)
+      const currentUrl = window.location.origin
+      window.location.href = `http://localhost:3000/login?from=protected&redirect=${encodeURIComponent(currentUrl)}`
+      return
+    }
+
     // 유저 정보 없으면 접근 막기 (로그인 페이지로 강제 이동)
     if(!user && !localStorage.getItem('user')){
       if(action === 'done') return
+      if(action === 'clear') return
       const currentUrl = window.location.origin
       window.location.href = `http://localhost:3000/login?from=protected&redirect=${encodeURIComponent(currentUrl)}`
     }

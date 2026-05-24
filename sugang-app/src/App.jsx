@@ -77,7 +77,31 @@ export default function App() {
       // 3. 학생 마이페이지 정보 가져오기 (EnrollmentService 연동)
       // user.id는 로그인 시 저장된 학번이라고 가정
       const myPageRes = await api.get(`/enroll/mypage/${studentId}`);
-      setStudentData(myPageRes.data);
+      const rawStudentData = myPageRes.data;
+      if (rawStudentData && rawStudentData.waitingCourses) {
+        const waitingCoursesWithNumbers = await Promise.all(
+          rawStudentData.waitingCourses.map(async (course) => {
+            try {
+              // 개별 과목의 대기 번호를 요청하는 API (이전 가이드에서 만든 레포지토리 로직과 연동)
+              const numRes = await api.get(`/enroll/waiting-number`, {
+                params: { studentId, courseId: course.courseId }
+              });
+              // 기존 과목 데이터에 waitingNumber 필드를 추가 조립
+              return { ...course, waitingNumber: numRes.data }; 
+            } catch (err) {
+              console.error(`${course.courseName} 대기번호 로드 실패:`, err);
+              return { ...course, waitingNumber: "-" }; // 에러 시 예외 처리
+            }
+          })
+        );
+        rawStudentData.waitingCourses = waitingCoursesWithNumbers;        
+      }
+      
+      
+      setStudentData(rawStudentData);
+
+      // 4. 대기열 과목은 대기 번호 붙여주기
+
     } catch (error) {
       console.error("데이터 로드 중 오류 발생:", error);
     }
